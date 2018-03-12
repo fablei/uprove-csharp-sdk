@@ -238,6 +238,9 @@ namespace UProveCrypto
         private FieldZqElement[] r;
         private CommitmentValues[] commitments;
 
+        // extension by Fablei
+        private int na; // number of attributes included in this proof
+
         /// <summary>
         /// Constructs a new <code>PresentationProof</code> instance.
         /// </summary>
@@ -355,15 +358,16 @@ namespace UProveCrypto
                 Array.Sort(committed);
             }
 
-            int n = 0;
-            if (ip.E != null)
-            {
-                n = ip.E.Length;
-                if (n != attributes.Length)
-                {
-                    throw new ArgumentException("number of attributes is inconsistent with issuer parameters");
-                }
-            }
+            // extension by Fablei
+            int n = attributes.Length;
+            //if (ip.E != null)
+            //{
+            //    n = ip.E.Length;
+            //    if (n != attributes.Length)
+            //    {
+            //        throw new ArgumentException("number of attributes is inconsistent with issuer parameters");
+            //    }
+            //}
 
             bool presentPseudonym = false;
 
@@ -415,6 +419,10 @@ namespace UProveCrypto
             int dIndex = 0;
             int cIndex = 0;
             PresentationProof proof = new PresentationProof();
+
+            // extension by Fablei
+            proof.na = attributes.Length;
+
             proof.DisclosedAttributes = new byte[disclosed.Length][];
             int pseudonymRandomizerIndex = 0;
             if (generateCommitments)
@@ -696,7 +704,10 @@ namespace UProveCrypto
                 }
                 Array.Sort(disclosed);
                 Group Gq = ip.Gq;
-                int n = ip.E.Length;
+
+                // extension by Fablei
+                int n = this.na;
+                //int n = ip.E.Length;
 
                 bool presentPseudonym = false;
                 if (gs != null && pseudonymAttribIndex != 0)
@@ -896,6 +907,11 @@ namespace UProveCrypto
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal string[] _tr;
 
+        // extension by Fablei
+        [DataMember(Name = "na", Order = 9, EmitDefaultValue = false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal int _na;
+
         [OnSerializing]
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal void OnSerializing(StreamingContext context)
@@ -919,6 +935,10 @@ namespace UProveCrypto
             {
                 _ps = this.Ps.ToBase64String();
             }
+
+            // extension by Fablei
+            _na = this.na;
+            
             if (this.Commitments != null)
             {
                 int size = this.Commitments.Length;
@@ -958,7 +978,7 @@ namespace UProveCrypto
             {
                 throw new UProveSerializationException("Ps and ap must either both be set or both be empty");
             }
-
+            
             this.DisclosedAttributes = new byte[_disclosedAttributes.Length][];
             for (int i = 0; i < _disclosedAttributes.Length; i++)
             {
@@ -969,6 +989,9 @@ namespace UProveCrypto
             {
                 this.Ap = _ap.ToByteArray();
             }
+
+            // extension by Fablei
+            this.na = _na;
 
             this.deserializationStarted = true;
         }

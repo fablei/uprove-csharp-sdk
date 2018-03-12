@@ -111,12 +111,16 @@ namespace UProveCrypto
             {
                 throw new ArgumentException("C and K are not disjoint: " + C.Intersect(K));
             }
+                        
+            // extension by Fablei -> IP.G.Length (=IP.E.Length) must be bigger than the union
+            if ((U.Union(C)).Union(K).Count() >= (IP.G.Length - 2))
+                throw new ArgumentException("C, U and K cannot jointly contain all attributes");
 
             // Check that C, U, K contain all attributes
-            if ((U.Union(C)).Union(K).Count() != (IP.G.Length - 2))
-            {
-                throw new ArgumentException("C, U and K do not jointly contain all attributes");
-            }
+            //if ((U.Union(C)).Union(K).Count() != (IP.G.Length - 2))
+            //{
+            //    throw new ArgumentException("C, U and K do not jointly contain all attributes");
+            //}
         }
     }
 
@@ -277,6 +281,9 @@ namespace UProveCrypto
         public GroupElement Ch0;
         public byte[] c;
 
+        // extension by Fablei -> contains the number of attributes used in the proof
+        public int na;
+
         public Dictionary<String, FieldZqElement> responses;
 
         [DataMember(Name = "presentation", EmitDefaultValue = false, Order = 7)]
@@ -284,7 +291,7 @@ namespace UProveCrypto
 
         // This is private because everyone should use CreateProof
         private PreIssuanceProof(GroupElement h0, GroupElement CGamma, GroupElement Ch0, byte[] c, 
-            Dictionary<String, FieldZqElement> responses, PresentationProof presentation)
+            Dictionary<String, FieldZqElement> responses, PresentationProof presentation, int numberOfAttributes)
         {
             this.h0 = h0;
             this.CGamma = CGamma;
@@ -292,6 +299,7 @@ namespace UProveCrypto
             this.c = c;
             this.responses = responses;
             this.presentation = presentation;
+            na = numberOfAttributes;
         }
 
         // helper method to get the response by name; wraps up the error-checking for convenience
@@ -332,14 +340,17 @@ namespace UProveCrypto
             GroupElement[] tildeC = null;
             FieldZqElement[] tildeR = null;
 
+            // extension by Fablei -> needs to calculate the ip.G.Length -> pipp.Attributes.Length + 2
+            int ipGLength = pipp.Attributes.Length + 2;
+
             // Generate random values
             beta0 = Zq.GetRandomElement(true);
             FieldZqElement tildeBeta0 = Zq.GetRandomElement(true);
             FieldZqElement rho = Zq.GetRandomElement(true);
             FieldZqElement tildeRho = Zq.GetRandomElement(true);
             FieldZqElement tilde_d = Zq.GetRandomElement(true);
-            FieldZqElement[] tildeX = new FieldZqElement[ip.G.Length - 1];
-            for (int i = 1; i < ip.G.Length - 1; i++)
+            FieldZqElement[] tildeX = new FieldZqElement[ipGLength-1];
+            for (int i = 1; i < ipGLength - 1; i++)
             {
                 if (!pipp.K.Contains(i))
                 {
@@ -397,7 +408,7 @@ namespace UProveCrypto
             
             bases.Add(Gq.G);
             exponents.Add(tildeRho);
-            for (int i = 1; i < ip.G.Length-1; i++)
+            for (int i = 1; i < ipGLength-1; i++)
             {
                 if (!pipp.K.Contains(i))     // i \not\in K
                 {
@@ -418,9 +429,9 @@ namespace UProveCrypto
             responses.Add("sD", tilde_d.Add(beta0.Multiply(rho).Multiply(negc)));   // sD = tilde_d - beta0*rho*c
             responses.Add("sRho", tildeRho.Add(rho.Multiply(negc)));                // sRho = tildeRho - rho*c
 
-            for (int i = 1; i < ip.G.Length-1; i++)
+            for (int i = 1; i < ipGLength-1; i++)
             {
-                if (!pipp.K.Contains(i))      // in \not\in K
+                if (!pipp.K.Contains(i)) // in \not\in K
                 {
                     FieldZqElement xi = ProtocolHelper.ComputeXi(ip, i-1, pipp.Attributes[i-1]);
                     responses.Add("sx" + i, tildeX[i].Add(xi.Multiply(negc)));          // sxi = tildeX[i] - xi*c
@@ -436,7 +447,7 @@ namespace UProveCrypto
             }
 
             return new PreIssuanceProof(h0, Cgamma, Ch0, c, responses, 
-                pipp.HasCarryOverAttributes ? presProof : null);
+                pipp.HasCarryOverAttributes ? presProof : null, pipp.Attributes.Length);
         }
 
         // Verifies the pre-issuance proof, and returns the element gamma needed for the token issuance.
@@ -452,6 +463,9 @@ namespace UProveCrypto
         {
             // Validate paramters first
             ipip.Validate();
+
+            // extension by Fablei -> need to know the number of attributes involved in this proof -> ip.G.length
+            int ipGLength = proof.na + 2;
 
             IssuerParameters ip = ipip.IP;
             FieldZq Zq = ip.Zq;
@@ -516,13 +530,15 @@ namespace UProveCrypto
             // Compute gammaK (product of known attributes)
             bases = new List<GroupElement>();
             exponents = new List<FieldZqElement>();
-            int t = ip.G.Length-1;
+            //int t = ip.G.Length-1;
+            // extension by Fablei
+            int t = ipGLength-1;
             FieldZqElement xt = ProtocolHelper.ComputeXt(ip, ipip.TI, ipip.DeviceProtected);
             bases.Add(ip.G[0]);
             exponents.Add(ip.Zq.One);
             bases.Add(ip.G[t]);
             exponents.Add(xt);  // gammaK = g0*(gt^xt)
-            for (int i = 1; i < ip.G.Length - 1; i++)
+            for (int i = 1; i < ipGLength - 1; i++)
             {
                 if (ipip.K.Contains(i))
                 {
@@ -540,7 +556,7 @@ namespace UProveCrypto
             exponents.Add(c);
             bases.Add(gammaK);
             exponents.Add(c.Negate());  // TODO: do with one exp; i.e., (CGamma/gammaK)^c
-            for (int i = 1; i < ip.G.Length - 1; i++)
+            for (int i = 1; i < ipGLength - 1; i++)
             {
                 if (!ipip.K.Contains(i))
                 {
@@ -635,6 +651,10 @@ namespace UProveCrypto
         [DataMember(Name = "responses_keys", EmitDefaultValue = false, Order = 6)]
         internal string[] _responses_keys;
 
+        // extension by Fablei
+        [DataMember(Name = "na", EmitDefaultValue = false, Order = 7)]
+        internal int _na;
+
         [OnSerializing]
         internal void OnSerializing(StreamingContext context)
         {
@@ -645,6 +665,7 @@ namespace UProveCrypto
             // Serialize the responses dictionary.  TODO: if FieldZqElement was serializable, then this wouldn't be necessary, since Dictionary knows how to serializae itself proivded the keys and values are serializable. 
             _responses_keys = new string[responses.Count];
             _responses_values = new string[responses.Count];
+            _na = na;
 
             int i = 0;
             foreach (KeyValuePair<string, FieldZqElement> resp in responses)
@@ -682,6 +703,7 @@ namespace UProveCrypto
                     throw new UProveSerializationException("responses");
                 }
                 c = _c.ToByteArray();
+                na = _na;
             }
             catch
             {

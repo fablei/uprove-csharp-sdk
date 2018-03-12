@@ -73,7 +73,11 @@ namespace UProveCrypto
             {
                 throw new ArgumentException("Group description is not set");
             }
-            int n = ip.E == null ? 0 : ip.E.Length;
+
+            //int n = ip.E == null ? 0 : ip.E.Length;
+            // extension by Fablei
+            int n = ip.MaxNumberOfAttributes;
+
             Group Gq = ip.Gq;
             ip.G = new GroupElement[n + 2];
 

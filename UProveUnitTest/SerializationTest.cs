@@ -30,6 +30,8 @@ namespace UProveUnitTest
     public class SerializationTest
     {
         static bool CREATE_SERIALIZATION_TEST_FILES = false;
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
 
         static byte[] HexToBytes(string hexString)
         {
@@ -71,7 +73,7 @@ namespace UProveUnitTest
                     bool useCustomGroup = (i == 0);
                     bool useSubgroupConstruction = (j == 0);
 
-                    IssuerSetupParameters isp = new IssuerSetupParameters();
+                    IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
                     if (useSubgroupConstruction)
                     {
                         isp.GroupConstruction = GroupType.Subgroup;
@@ -99,7 +101,7 @@ namespace UProveUnitTest
                     }
 
                     isp.UidP = encoding.GetBytes("http://issuer/uprove/issuerparams/software");
-                    isp.E = IssuerSetupParameters.GetDefaultEValues(3);
+                    //isp.E = IssuerSetupParameters.GetDefaultEValues(3); // extension by Fablei -> this overrides the MaxNumberOfAttribute variable
                     isp.S = encoding.GetBytes("application-specific specification");
 
                     // Generate IssuerKeyAndParameters
@@ -180,6 +182,7 @@ namespace UProveUnitTest
 
         }
         [TestMethod]
+        // extension Fablei, failing expected, because MaxNumberOfAttributes is not present in the file..
         public void TestSerializationReference()
         {
 
@@ -197,7 +200,7 @@ namespace UProveUnitTest
                 string typeName = (string)parameters[2];
                 string json = (string)parameters[3];
 
-                IssuerSetupParameters isp = new IssuerSetupParameters();
+                IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
                 if (useSubgroupConstruction)
                 {
                     isp.GroupConstruction = GroupType.Subgroup;
@@ -291,7 +294,7 @@ namespace UProveUnitTest
         [TestMethod]
         public void TestSerializationErrors()
         { 
-            string ipJson = 
+            string ipJson =
                 @"{""uidp"":""aHR0cDovL2lzc3Vlci91cHJvdmUvaXNzdWVycGFyYW1zL3NvZnR3YXJl"",
                    ""descGq"":{
                       ""type"":""sg"",
@@ -310,7 +313,8 @@ namespace UProveUnitTest
                           ""selOZXQwG7AwW1veYigEW9Tl1INw\/V0rXkQDx4OtJ8lCvv2RpAh4SkoUoy6yL2yOVZqd5rosTP8snKYO5L1aE4aqZNuNL8GD\/XxXbW7tzf\/OqOAqilJG4C+2\/IQADK42p674HIkf6Txj5P+epGhcl8V+XYyFNKYhXmUq\/9ju1fY=""
                         ],
                    ""e"":""AQEB"",
-                   ""s"":""YXBwbGljYXRpb24tc3BlY2lmaWMgc3BlY2lmaWNhdGlvbg==""
+                   ""s"":""YXBwbGljYXRpb24tc3BlY2lmaWMgc3BlY2lmaWNhdGlvbg=="",
+                   ""MaxNumberOfAttributes"":""12""
                 }";
 
             IssuerParameters ip = new IssuerParameters(ipJson);
@@ -320,6 +324,8 @@ namespace UProveUnitTest
             TestError<IssuerParameters>(ip, RemoveArrayValue(ipJson, "g"), "IssuerParameters:g");
             TestError<IssuerParameters>(ip, RemoveObject(ipJson, "descGq"), "IssuerParameters:descGq");
             TestError<IssuerParameters>(ip, "{blah,blah,blah}", "IssuerParameters");
+            // extension Fablei
+            TestError<IssuerParameters>(ip, RemoveValue(ipJson, "MaxNumberOfAttributes"), "IssuerParameters:MaxNumberOfAttributes");
             TestError<IssuerParameters>(ip, "{{}", "IssuerParameters");
 
             string missingGelement = ipJson.Replace(
@@ -329,7 +335,7 @@ namespace UProveUnitTest
             TestError<IssuerParameters>(ip, RemoveValue(ipJson, "p"), "IssuerParameters:p, q, g cannot be null");
             TestError<IssuerParameters>(ip, RemoveValue(ipJson, "q"), "IssuerParameters:p, q, g cannot be null");
 
-            string ipwk = "{\"ip\":{\"uidp\":\"aHR0cDovL2lzc3Vlci91cHJvdmUvaXNzdWVycGFyYW1zL3NvZnR3YXJl\",\"descGq\":{\"type\":\"sg\",\"sgDesc\":{\"p\":\"0hro1m5sazztDrPfGibJG97tATwX2EnTDsMJgT5NN5nybbDUlOguxh6p\\/ccLtcvK8uXxioNklPWOZ8bWFkgMN6fyMGEB\\/J8PR2j5yXk8K+F2sLfJebQGXT6DVoaj8LhCDGg0yxeTA4be2rKwfdRzRJpIuqsxYoa0IQUkddE0zTs=\",\"q\":\"\\/\\/gK4Z2uvGH0Y1avCTXcDoEUjrE=\",\"g\":\"q87Jcump3Y0TMnDP6sJvcm5WfZZHV2MNa9Q0YNCSOkauwKziVevz3dSxxCZPU+aLNhr7d3oTzwBn2uNko01VoJZabMz3iFJ4KSOBPPhwiDTZH2VX14PsdbXzfNkYXwJ7BCwccuEhsSZqQIvgu3Jw1lkXtpCDYz4fPNYGJGEvyME=\"}},\"uidh\":\"SHA1\",\"g\":[\"ybxHPsPkePTYYMiUGETQ822iQg+85hvv06Z8flO9e1YNZfS5r7OhKpeynQG0UJ\\/ESR4yLv8dhPQbcP\\/q\\/jeRNDMo0ADilNP6hG4X1DAR4zBkSxD6lYZdiHwR+6AIW06OzfL\\/kHKMFBlrgoRCH+XBb3krgp4AQbPgBwNA0Qoo2UY=\",\"pdo\\/xldIiFccsQHzwAAWdovZvqMyaUgACRaCKSne9tvO1hmT2Bq9pSx7ijv7tRuXxZgkCsK\\/jD3dw2iUGh\\/7GBxaOIM80aMuMZVq+nfwbH0Jnq5VfOd31V2Bu1Zk32QgYIIihKpF8tB1UMpMDnA3GMRMDg8HS9zylU4nRtvFR+g=\",\"OJAOz01vw+3Z1jKhOVr3oiRxELLbpg956KXik\\/Lhmmxra9Q7kSkD0fvmw6rOLNcnlxTeF9MXWVn6qxUvYRjh1ySHDLqF4l3o6UnzamMCZhtqnwoLFAnYxFy50ZDJwXIxZSpWDiolM8MKouLuav94mTjZRTTyfFAkKsqtbk1eo5U=\",\"IkJR\\/dTsz3e5V5QGSXbDd1b95OGHOmaXPA\\/cpkSYnqjmM190c5yCdDYrp1nxRd01me2gYEvWyCgvmAzAJFbWq\\/UTEzV+SoXbTfK9NgqavtCqftSLEmAE7abbLxMCJJORPLkTcuvdvyr2etlbJkJd0tcr58NngFDnFG6fVD2IZ7k=\",\"PhDwzgR9D+BSwgnwgswy6m6i\\/8B6\\/ToPtbBLEUw4g81wrL5FlwDnr53sXdiEdCPd\\/JIJVx62u8tZhbTZhxEVVpyCO4OPC1FW9lTyactU5fsrDoxix1oVD6hBaDYleWfH6i8EXZJaWdVwAWN\\/dh5Fil9dg8QM5RGeB7DFWAgLhNQ=\"],\"e\":\"AQEB\",\"s\":\"YXBwbGljYXRpb24tc3BlY2lmaWMgc3BlY2lmaWNhdGlvbg==\"},\"key\":\"JqhFTJQnvemGaFyAa+Zl+CbRuls=\"}";
+            string ipwk = "{\"ip\":{\"uidp\":\"aHR0cDovL2lzc3Vlci91cHJvdmUvaXNzdWVycGFyYW1zL3NvZnR3YXJl\",\"descGq\":{\"type\":\"sg\",\"sgDesc\":{\"p\":\"0hro1m5sazztDrPfGibJG97tATwX2EnTDsMJgT5NN5nybbDUlOguxh6p\\/ccLtcvK8uXxioNklPWOZ8bWFkgMN6fyMGEB\\/J8PR2j5yXk8K+F2sLfJebQGXT6DVoaj8LhCDGg0yxeTA4be2rKwfdRzRJpIuqsxYoa0IQUkddE0zTs=\",\"q\":\"\\/\\/gK4Z2uvGH0Y1avCTXcDoEUjrE=\",\"g\":\"q87Jcump3Y0TMnDP6sJvcm5WfZZHV2MNa9Q0YNCSOkauwKziVevz3dSxxCZPU+aLNhr7d3oTzwBn2uNko01VoJZabMz3iFJ4KSOBPPhwiDTZH2VX14PsdbXzfNkYXwJ7BCwccuEhsSZqQIvgu3Jw1lkXtpCDYz4fPNYGJGEvyME=\"}},\"uidh\":\"SHA1\",\"g\":[\"ybxHPsPkePTYYMiUGETQ822iQg+85hvv06Z8flO9e1YNZfS5r7OhKpeynQG0UJ\\/ESR4yLv8dhPQbcP\\/q\\/jeRNDMo0ADilNP6hG4X1DAR4zBkSxD6lYZdiHwR+6AIW06OzfL\\/kHKMFBlrgoRCH+XBb3krgp4AQbPgBwNA0Qoo2UY=\",\"pdo\\/xldIiFccsQHzwAAWdovZvqMyaUgACRaCKSne9tvO1hmT2Bq9pSx7ijv7tRuXxZgkCsK\\/jD3dw2iUGh\\/7GBxaOIM80aMuMZVq+nfwbH0Jnq5VfOd31V2Bu1Zk32QgYIIihKpF8tB1UMpMDnA3GMRMDg8HS9zylU4nRtvFR+g=\",\"OJAOz01vw+3Z1jKhOVr3oiRxELLbpg956KXik\\/Lhmmxra9Q7kSkD0fvmw6rOLNcnlxTeF9MXWVn6qxUvYRjh1ySHDLqF4l3o6UnzamMCZhtqnwoLFAnYxFy50ZDJwXIxZSpWDiolM8MKouLuav94mTjZRTTyfFAkKsqtbk1eo5U=\",\"IkJR\\/dTsz3e5V5QGSXbDd1b95OGHOmaXPA\\/cpkSYnqjmM190c5yCdDYrp1nxRd01me2gYEvWyCgvmAzAJFbWq\\/UTEzV+SoXbTfK9NgqavtCqftSLEmAE7abbLxMCJJORPLkTcuvdvyr2etlbJkJd0tcr58NngFDnFG6fVD2IZ7k=\",\"PhDwzgR9D+BSwgnwgswy6m6i\\/8B6\\/ToPtbBLEUw4g81wrL5FlwDnr53sXdiEdCPd\\/JIJVx62u8tZhbTZhxEVVpyCO4OPC1FW9lTyactU5fsrDoxix1oVD6hBaDYleWfH6i8EXZJaWdVwAWN\\/dh5Fil9dg8QM5RGeB7DFWAgLhNQ=\"],\"e\":\"AQEB\",\"s\":\"YXBwbGljYXRpb24tc3BlY2lmaWMgc3BlY2lmaWNhdGlvbg==\",\"MaxNumberOfAttributes\":\"12\"},\"key\":\"JqhFTJQnvemGaFyAa+Zl+CbRuls=\"}";
 
             TestError<IssuerKeyAndParameters>(ip, RemoveObject(ipwk, "ip"), "IssuerKeyAndParameters:ip");
             TestError<IssuerKeyAndParameters>(ip, RemoveValue(ipwk, "key"), "IssuerKeyAndParameters:key");
@@ -337,6 +343,8 @@ namespace UProveUnitTest
             TestError<IssuerKeyAndParameters>(ip, RemoveValue(ipwk, "uidh"), "IssuerKeyAndParameters:uidh");
             TestError<IssuerKeyAndParameters>(ip, RemoveArrayValue(ipwk, "g"), "IssuerKeyAndParameters:g");
             TestError<IssuerKeyAndParameters>(ip, RemoveObject(ipwk, "descGq"), "IssuerKeyAndParameters:descGq");
+            // extension Fablei
+            TestError<IssuerKeyAndParameters>(ip, RemoveValue(ipwk, "MaxNumberOfAttributes"), "IssuerKeyAndParameters:MaxNumberOfAttributes");
             TestError<IssuerKeyAndParameters>(ip, ipJson, "IssuerKeyAndParameters:ip");
             TestError<IssuerKeyAndParameters>(ip, "{{}", "IssuerKeyAndParameters");
 
