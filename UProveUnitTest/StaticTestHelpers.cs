@@ -19,10 +19,12 @@ namespace UProveUnitTest
     static class StaticTestHelpers
     {
         private static System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding();
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
 
         public static void GenerateTestIssuanceParameters(string uidp, string spec, int numberOfAttributes, bool useRecommendedParameters, int numberOfTokens, out IssuerKeyAndParameters ikap, out IssuerProtocolParameters ipp, out ProverProtocolParameters ppp)
         {
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = (uidp == null ? null : encoding.GetBytes(uidp));
             isp.E = IssuerSetupParameters.GetDefaultEValues(numberOfAttributes);
             isp.UseRecommendedParameterSet = useRecommendedParameters;

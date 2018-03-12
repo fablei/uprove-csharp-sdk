@@ -9,6 +9,8 @@
 //    IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
 //    PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
 //
+//    EXTENSIONS MADE BY FABLEI ARE MARKED 
+//    WITH extension by Fablei
 //*********************************************************
 
 using System;
@@ -37,10 +39,27 @@ namespace UProveCrypto
         private bool usesRecommendedParameters;
 
         /// <summary>
+        /// extension by Fablei
+        /// Contains information about the maximum attributes, the issuer is able to include into an issued token
+        /// </summary>
+        public int MaxNumberOfAttributes { get; private set; }
+
+        /// <summary>
         /// Constructs an Issuer parameters instance.
         /// </summary>
         public IssuerParameters()
         {
+            IssuerParameters.serializer = new Serializer();
+        }
+
+        /// <summary>
+        /// extension by Fablei
+        /// Constructor to create the issuer parameter a given max number of attributes
+        /// </summary>
+        /// <param name="maxNumberOfAttributes">maximum number of attributes, the issuer will be able to include into an issued token</param>
+        public IssuerParameters(int maxNumberOfAttributes)
+        {
+            MaxNumberOfAttributes = maxNumberOfAttributes;
             IssuerParameters.serializer = new Serializer();
         }
 
@@ -60,6 +79,9 @@ namespace UProveCrypto
             this.e = issuerParameters.e;
             this.s = issuerParameters.s;
             this.usesRecommendedParameters = issuerParameters.usesRecommendedParameters;
+
+            // extension by Fablei
+            MaxNumberOfAttributes = issuerParameters.MaxNumberOfAttributes;
         }
 
         /// <summary>
@@ -73,7 +95,9 @@ namespace UProveCrypto
         /// <param name="e">The encoding bytes.</param>
         /// <param name="s">The specification bytes.</param>
         /// <param name="usesRecommendedParameters">Indicates if the group and g array uses the recommended parameters.</param>
-        public IssuerParameters(byte[] uidp, Group group, string uidh, GroupElement[] g, GroupElement gd, byte[] e, byte[] s, bool usesRecommendedParameters)
+        /// <param name="maxNumberOfAttributes">maximum number of attributes, the issuer will be able to include into an issued token - extension by Fablei</param>
+        public IssuerParameters(byte[] uidp, Group group, string uidh, GroupElement[] g, GroupElement gd, byte[] e, byte[] s, bool usesRecommendedParameters,
+            int maxNumberOfAttributes)
         {
             this.uidp = uidp;
             this.group = group;
@@ -83,6 +107,9 @@ namespace UProveCrypto
             this.e = e;
             this.s = s;
             this.usesRecommendedParameters = usesRecommendedParameters;
+            // extension by Fablei
+            MaxNumberOfAttributes = maxNumberOfAttributes;
+
             IssuerParameters.serializer = new Serializer();
         }
 
@@ -359,6 +386,11 @@ namespace UProveCrypto
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal string _s;
 
+        // extension by Fablei
+        [DataMember(Name = "MaxNumberOfAttributes", EmitDefaultValue = false, Order = 8)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal string _maxNumberOfAttributes;
+
         [OnSerializing]
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal void OnSerializing(StreamingContext context)
@@ -368,6 +400,9 @@ namespace UProveCrypto
             _uidh = this.UidH;
             _e = this.E.ToBase64String();
             _s = this.S.ToBase64String();
+
+            // extension by Fablei
+            _maxNumberOfAttributes = this.MaxNumberOfAttributes.ToString();
 
             if (ParameterSet.ContainsParameterSet(this.group.GroupName) &&
                 (this.UsesRecommendedParameters == true))
@@ -394,6 +429,10 @@ namespace UProveCrypto
             if (_g == null)
                 throw new UProveSerializationException("g");
 
+            // extension by Fablei
+            if (_maxNumberOfAttributes == null)
+                throw new UProveSerializationException("MaxNumberOfAttributes");
+
             this.UidP = _uidp.ToByteArray();
             this.Gq = _group.ToGroup();
             this.UidH = _uidh;
@@ -402,6 +441,9 @@ namespace UProveCrypto
             this.E = (_e == null) ? new byte[] { } : _e.ToByteArray();
             this.S = _s.ToByteArray();
             this.digest = new byte[2][];
+            
+            // extension by Fablei
+            MaxNumberOfAttributes = int.Parse(_maxNumberOfAttributes);
 
             ParameterSet defaultParamSet;
             if (ParameterSet.TryGetNamedParameterSet(this.Gq.GroupName, out defaultParamSet)) // named

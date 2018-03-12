@@ -9,6 +9,8 @@
 //    IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
 //    PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
 //
+//    EXTENSIONS MADE BY FABLEI ARE MARKED 
+//    WITH extension by Fablei
 //*********************************************************
 
 using System;
@@ -35,9 +37,14 @@ namespace UProveCrypto
         /// <summary>
         /// Constructs a new <code>IssuerSetupParameters</code> instance.
         /// </summary>
-        public IssuerSetupParameters()
+        /// <param name="maxNumberOfAttributes">maximum number of attributes, the issuer will be able to include into an issued token - extension by Fablei</param>
+        public IssuerSetupParameters(int maxNumberOfAttributes)
         {
-            ip = new IssuerParameters();
+            ip = new IssuerParameters(maxNumberOfAttributes);
+
+            // extension by Fablei
+            MaxNumberOfAttributes = maxNumberOfAttributes;
+
             // set the defaults
             ip.UidH = "SHA-256";
             GroupConstruction = GroupType.ECC;
@@ -81,23 +88,40 @@ namespace UProveCrypto
             set { ip.E = value; }
         }
 
+        // extension by Fablei
+        ///// <summary>
+        ///// Gets or sets the number of attributes to be encoded in the token.
+        ///// Setting this property will also set the corresponding <see cref="E"/>
+        ///// attribute using <see cref="M:GetDefaultEValues"/>.
+        ///// </summary>
+        //public int NumberOfAttributes
+        //{
+        //    get
+        //    {
+        //        if (E == null)
+        //        {
+        //            return 0;
+        //        }
+        //        else
+        //        {
+        //            return E.Length;
+        //        }
+        //    }
+        //    set
+        //    {
+        //        E = GetDefaultEValues(value);
+        //    }
+        //}
+
         /// <summary>
-        /// Gets or sets the number of attributes to be encoded in the token.
-        /// Setting this property will also set the corresponding <see cref="E"/>
-        /// attribute using <see cref="M:GetDefaultEValues"/>.
+        /// extension by Fablei
+        /// maximum number of attributes, the issuer will be able to include into an issued token
         /// </summary>
-        public int NumberOfAttributes
+        public int MaxNumberOfAttributes
         {
             get
             {
-                if (E == null)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return E.Length;
-                }
+                return ip.MaxNumberOfAttributes;
             }
             set
             {
