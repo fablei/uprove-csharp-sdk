@@ -24,6 +24,9 @@ namespace UProveUnitTest
     [TestClass]
     public class RecommendedParametersTest
     {
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
+
         private void RunProtocol(IssuerKeyAndParameters ikap, IssuerParameters ip)
         {
             ip.Verify(); // sanity check
@@ -148,7 +151,7 @@ namespace UProveUnitTest
                 Gq.ValidateGroupElement(set.Gd);
 
                 // Issuer setup
-                IssuerSetupParameters isp = new IssuerSetupParameters();
+                IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
                 isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 if (oid == "1.3.6.1.4.1.311.75.1.2.3") // P-521
                 {
@@ -179,9 +182,9 @@ namespace UProveUnitTest
             //
 
             // Issuer setup
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            isp.NumberOfAttributes = 1;
+            // isp.NumberOfAttributes = 1;   // extension by Fablei
             isp.UseRecommendedParameterSet = false; // use freshly generated generators
             isp.GroupConstruction = GroupType.Subgroup;
             IssuerKeyAndParameters ikap = isp.Generate();
@@ -198,10 +201,12 @@ namespace UProveUnitTest
             // test with max+1 attributes
             //
 
-            isp.NumberOfAttributes = IssuerSetupParameters.RecommendedParametersMaxNumberOfAttributes + 1;
+            //isp.NumberOfAttributes = IssuerSetupParameters.RecommendedParametersMaxNumberOfAttributes + 1;
+            isp.MaxNumberOfAttributes = maxNumberOfAttributes + 1;
             ikap = isp.Generate();
             ip = ikap.IssuerParameters;
-            Assert.IsTrue(ip.E.Length == IssuerSetupParameters.RecommendedParametersMaxNumberOfAttributes + 1);
+            //Assert.IsTrue(ip.E.Length == IssuerSetupParameters.RecommendedParametersMaxNumberOfAttributes + 1);
+            Assert.IsTrue(ip.E.Length == maxNumberOfAttributes + 1);
             RunProtocol(ikap, ip);
 
             //
@@ -212,11 +217,12 @@ namespace UProveUnitTest
             try
             {
                 ikap = isp.Generate();
-                Assert.Fail();
+                //Assert.Fail();
+                // extension by Fablei -> expected because if isp.MaxNumberOfAttributes changes, ip.E changes as well
             }
             catch (System.ArgumentException) 
             {
-                // expected
+                Assert.Fail();
             };
         }
 
@@ -231,9 +237,9 @@ namespace UProveUnitTest
             ParameterSet set;
             ParameterSet.TryGetNamedParameterSet(SubgroupParameterSets.ParamSet_SG_2048256_V1Name, out set);
 
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            isp.NumberOfAttributes = 1;
+            // isp.NumberOfAttributes = 1;  // extension by Fablei
             isp.Gq = set.Group; // reusing an existing group.
             IssuerKeyAndParameters ikap = isp.Generate();
             IssuerParameters ip = ikap.IssuerParameters;

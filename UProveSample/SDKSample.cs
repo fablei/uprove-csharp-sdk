@@ -61,14 +61,15 @@ namespace UProveSample
             return message;
         }
 
-        private static IssuerKeyAndParameters SetupUProveIssuer(string UIDP, int numberOfAttributes, GroupType groupType = GroupType.ECC, bool supportDevice = false)
+        // extension by Fablei -> removed numberOfAttributes because it is not needed at that point
+        private static IssuerKeyAndParameters SetupUProveIssuer(string UIDP, int maxNumberOfAttributes, GroupType groupType = GroupType.ECC, bool supportDevice = false)
         {
             WriteLine("Setting up Issuer parameters");
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             // pick a unique identifier for the issuer params
             isp.UidP = encoding.GetBytes(UIDP);
             // set the number of attributes in the U-Prove tokens
-            isp.NumberOfAttributes = numberOfAttributes;
+            //isp.NumberOfAttributes = numberOfAttributes;
             // an application profile would define the format of the specification field,
             // we use a dummy value in this sample
             isp.S = encoding.GetBytes("application-specific specification");
@@ -78,7 +79,8 @@ namespace UProveSample
             return isp.Generate(supportDevice);
         }
 
-        private static UProveKeyAndToken[] IssueUProveTokens(IssuerKeyAndParameters ikap, IssuerParameters ip, byte[][] attributes, int numOfTokens, byte[] ti = null, byte[] pi = null)
+        // extension by Fablei -> hard token (e.g. smart card) is needed at that point
+        private static UProveKeyAndToken[] IssueUProveTokens(IssuerKeyAndParameters ikap, IssuerParameters ip, byte[][] attributes, int numOfTokens, byte[] ti = null, byte[] pi = null, IDevice device = null)
         {
             WriteLine("Issuing " + numOfTokens + " tokens");
             // setup the issuer and generate the first issuance message
@@ -86,6 +88,11 @@ namespace UProveSample
             ipp.Attributes = attributes;
             ipp.NumberOfTokens = numOfTokens;
             ipp.TokenInformation = ti;
+
+            // extension by Fablei -> add the device public key to the issuer instance
+            if (device != null)
+                ipp.DevicePublicKey = device.GetDevicePublicKey();
+
             Issuer issuer = ipp.CreateIssuer();
             string firstMessage = ip.Serialize<FirstIssuanceMessage>(issuer.GenerateFirstMessage());
 
@@ -95,6 +102,11 @@ namespace UProveSample
             ppp.NumberOfTokens = numOfTokens;
             ppp.TokenInformation = ti;
             ppp.ProverInformation = pi;
+
+            // extension by Fablei -> add the device public key to the prover instance
+            if (device != null)
+                ppp.DevicePublicKey = device.GetDevicePublicKey();
+
             Prover prover = ppp.CreateProver();
             string secondMessage = ip.Serialize<SecondIssuanceMessage>(prover.GenerateSecondMessage(ip.Deserialize<FirstIssuanceMessage>(firstMessage)));
 
@@ -148,7 +160,7 @@ namespace UProveSample
             /*
              *  issuer setup
              */
-            IssuerKeyAndParameters ikap = SetupUProveIssuer("sample software-only issuer", 3);
+            IssuerKeyAndParameters ikap = SetupUProveIssuer("sample software-only issuer", 12);
             string privateKeyBase64 = ikap.PrivateKey.ToBase64String(); // this needs to be stored securely
             string ipJSON = ikap.IssuerParameters.Serialize();
 
@@ -170,7 +182,7 @@ namespace UProveSample
             byte[] tokenInformation = encoding.GetBytes("token information value");
             byte[] proverInformation = encoding.GetBytes("prover information value");
             // specify the number of tokens to issue
-            int numberOfTokens = 5;
+            int numberOfTokens = 1;
 
             UProveKeyAndToken[] upkt = IssueUProveTokens(new IssuerKeyAndParameters(privateKeyBase64, ipJSON), ip, attributes, numberOfTokens, tokenInformation, proverInformation);           
 
@@ -205,7 +217,7 @@ namespace UProveSample
              *  issuer setup
              */
 
-            IssuerKeyAndParameters ikap = SetupUProveIssuer("sample device-protected issuer", 3, GroupType.Subgroup, true);
+            IssuerKeyAndParameters ikap = SetupUProveIssuer("sample device-protected issuer", 12, GroupType.Subgroup, true);
             string ipJSON = ikap.IssuerParameters.Serialize();
 
             // the IssuerParameters instance needs to be distributed to the Prover, Device, and Verifier.
@@ -238,9 +250,9 @@ namespace UProveSample
             byte[] tokenInformation = encoding.GetBytes("token information value");
             byte[] proverInformation = encoding.GetBytes("prover information value");
             // specify the number of tokens to issue
-            int numberOfTokens = 5;
+            int numberOfTokens = 1;
 
-            UProveKeyAndToken[] upkt = IssueUProveTokens(ikap, ip, attributes, numberOfTokens, tokenInformation, proverInformation);
+            UProveKeyAndToken[] upkt = IssueUProveTokens(ikap, ip, attributes, numberOfTokens, tokenInformation, proverInformation, device);
 
 
             /*

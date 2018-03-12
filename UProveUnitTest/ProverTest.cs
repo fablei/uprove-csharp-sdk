@@ -29,7 +29,8 @@ namespace UProveUnitTest
     [TestClass()]
     public class ProverTest
     {
-
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
 
         private TestContext testContextInstance;
 
@@ -88,7 +89,7 @@ namespace UProveUnitTest
             byte[][] A = new byte[][] { };
             byte[] TI = null;
             byte[] PI = null;
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 0 };
             isp.E = new byte[] { 0 };
             IssuerKeyAndParameters ikap = isp.Generate();
