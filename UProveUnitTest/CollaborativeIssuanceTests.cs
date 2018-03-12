@@ -60,20 +60,23 @@ namespace UProveUnitTest
         [ClassInitialize()]
         public static void MyClassInitialize(TestContext testContext)
         {
+            // extension by Fablei
+            int maxNumberOfAttributes = 12;
+
             // initialize source params
-            IssuerSetupParameters sourceIsp = new IssuerSetupParameters();
+            IssuerSetupParameters sourceIsp = new IssuerSetupParameters(maxNumberOfAttributes);
             sourceIsp.UidP = encoding.GetBytes("source issuer UID");
             sourceIsp.UseRecommendedParameterSet = true;
-            sourceIsp.NumberOfAttributes = 2;
+            //sourceIsp.NumberOfAttributes = 2; // extension by Fablei
             sourceIsp.S = encoding.GetBytes("source spec");
             sourceIkap = sourceIsp.Generate();
             sourceIp = sourceIkap.IssuerParameters;
             
             // initialize collab issuer params
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = encoding.GetBytes("collab issuer UID");
             isp.UseRecommendedParameterSet = true;
-            isp.NumberOfAttributes = 3;
+            // isp.NumberOfAttributes = 3;  // extension by Fablei
             isp.S = encoding.GetBytes("collab spec");
             ikap = isp.Generate();
             ip = ikap.IssuerParameters;
@@ -152,8 +155,8 @@ namespace UProveUnitTest
         {
             byte[] tokenInformation = new byte[] { };
             ProverPreIssuanceParameters ppip = new ProverPreIssuanceParameters(ip);
-            ppip.Attributes = new byte[][] { encoding.GetBytes("New attribute 1"), encoding.GetBytes("Secret attribute 2"), encoding.GetBytes("New attribute 3")};
-            ppip.U = new int[] { 2 };
+            ppip.Attributes = new byte[][] { encoding.GetBytes("New attribute 1"), encoding.GetBytes("Secret attribute 2"), encoding.GetBytes("New attribute 3"), encoding.GetBytes("New attribute 4") };
+            ppip.U = new int[] { 2, 4 };
             ppip.K = new int[] { 1, 3 };
             ppip.TI = tokenInformation;
 

@@ -27,6 +27,8 @@ namespace UProveUnitTest
     public class EndToEndTest
     {
         private static System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding();
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
 
         [TestMethod]
         public void SkipTokenValidationTest()
@@ -99,7 +101,7 @@ namespace UProveUnitTest
         public void PseudonymAndCommitmentsTest()
         {
             // Issuer setup
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             isp.E = new byte[] { (byte)1, (byte)1, (byte)1, (byte)1 };
             isp.UseRecommendedParameterSet = true;
@@ -181,7 +183,7 @@ namespace UProveUnitTest
         public void DevicePseudonymTest()
         {
             // Issuer setup
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             isp.E = new byte[] { (byte)1, (byte)1, (byte)1, (byte)1 };
             isp.UseRecommendedParameterSet = true;
@@ -244,9 +246,9 @@ namespace UProveUnitTest
         {
             int numberOfAttribs = 25;
             // Issuer setup
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(numberOfAttribs);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            isp.E = new byte[numberOfAttribs];
+            // isp.E = new byte[numberOfAttribs]; // extension by Fablei -> do not change MaxNumberOfAttributes
             isp.UseRecommendedParameterSet = true;
             for (int i = 0; i < numberOfAttribs; i++)
             {
@@ -343,7 +345,7 @@ namespace UProveUnitTest
                             foreach (bool supportDevice in new bool[] { false, true })
                             {
                                 // Issuer setup
-                                IssuerSetupParameters isp = new IssuerSetupParameters();
+                                IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
                                 isp.GroupConstruction = groupConstruction;
                                 isp.UidP = encoding.GetBytes("unique UID");
                                 isp.UidH = hashFunction;
@@ -432,7 +434,7 @@ namespace UProveUnitTest
                                     if (numberOfAttribs > 0)
                                     {
                                         // modify issuer params (change specification);
-                                        IssuerParameters ip2 = new IssuerParameters(ip.UidP, ip.Gq, ip.UidH, ip.G, ip.Gd, ip.E, ip.S, ip.UsesRecommendedParameters);
+                                        IssuerParameters ip2 = new IssuerParameters(ip.UidP, ip.Gq, ip.UidH, ip.G, ip.Gd, ip.E, ip.S, ip.UsesRecommendedParameters, maxNumberOfAttributes);
                                         ip2.S = encoding.GetBytes("wrong issuer params");
                                         try { proof.Verify(ip2, disclosed, message, null, upkt[i].Token); Assert.Fail(); }
                                         catch (InvalidUProveArtifactException) { }
@@ -504,11 +506,11 @@ namespace UProveUnitTest
         private void RunFuzzedTest(bool useSubgroupConstruction, string hashFunction, int numberOfAttributes, bool supportDevice, int numberOfTokens, int[] dArray, int[] cArray, int pseudonymIndex)
         {
             // Issuer setup
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(numberOfAttributes);
             isp.GroupConstruction = useSubgroupConstruction ? GroupType.Subgroup : GroupType.ECC;
             isp.UidP = GetRandomBytes(MaxByteArrayLength);
             isp.UidH = hashFunction;
-            isp.E = IssuerSetupParameters.GetDefaultEValues(numberOfAttributes);
+            //isp.E = IssuerSetupParameters.GetDefaultEValues(numberOfAttributes);  // extension by Fablei -> do not change MaxNumberOfAttributes
             isp.S = GetRandomBytes(MaxByteArrayLength);
             IssuerKeyAndParameters ikap = isp.Generate(supportDevice);
             IssuerParameters ip = ikap.IssuerParameters;

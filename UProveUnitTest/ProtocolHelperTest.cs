@@ -20,6 +20,8 @@ namespace UProveUnitTest
     [TestClass]
     public class ProtocolHelperTest
     {
+        // extension by Fablei
+        private static int maxNumberOfAttributes = 12;
 
         /// <summary>
         ///A test for ToBigInteger
@@ -77,7 +79,7 @@ namespace UProveUnitTest
         [TestMethod()]
         public void VerifyIssuerParametersTest()
         {
-            IssuerSetupParameters isp = new IssuerSetupParameters();
+            IssuerSetupParameters isp = new IssuerSetupParameters(maxNumberOfAttributes);
             isp.UidP = new byte[] { 1, 2, 3, 4, 5 };
             isp.E = IssuerSetupParameters.GetDefaultEValues(7);
             isp.UseRecommendedParameterSet = false;
